@@ -7,19 +7,20 @@ using UnityEngine.Serialization;
 public class DailyRewardsContent : MonoBehaviour
 {
     [SerializeField] private List<AbstractRewardSlot> rewardSlotList;
-    private DailyRewardsSystem dailyRewardsSystem;
+    private DailyRewardsPopup dailyRewardsPopup;
 
     public AbstractRewardSlot ReceivableAbstractRewardSlot { get; private set; }
 
-    public void Initialize(DailyRewardsSystem dailyRewardsSystem)
+    public void Initialize(DailyRewardsPopup popup)
     {
-        this.dailyRewardsSystem = dailyRewardsSystem;
+        dailyRewardsPopup = popup;
         // dailyRewardsSystem.OnClaimRewardsEvent += UpdateUI;
         InitializeUI();
     }
 
     private void InitializeUI()
     {
+        var dailyRewardsSystem = dailyRewardsPopup.DailyRewardsSystem;
         var dataModel = dailyRewardsSystem.Model;
         var config = dailyRewardsSystem.Config;
         
@@ -31,7 +32,7 @@ public class DailyRewardsContent : MonoBehaviour
         InitializeUI(
             currentDay,
             rewardList.GetRange(currentActivePage * daysInOnePage, daysInOnePage),
-            !dataModel.HasClaimedFreeRewards || !dataModel.HasClaimedAdRewards);
+            dailyRewardsSystem.HasAnyClaimableRewards);
     }
     
     private void InitializeUI(int currentDay, List<DateData> dateDataList, bool claimable)

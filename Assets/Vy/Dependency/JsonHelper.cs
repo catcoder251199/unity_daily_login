@@ -77,7 +77,8 @@ public class JsonHelper
     public static string LoadRemoteConfig(string remoteKey)
     {
         string remoteConfig = string.Empty;
-        if (FirebaseManager.Instance.IsRemoteConfigReady)
+        var firebaseManager = FirebaseManager.Instance;
+        if (firebaseManager != null && firebaseManager.IsRemoteConfigReady)
             remoteConfig = FirebaseManager.Instance.GetStringValueRemoteConfig(remoteKey, string.Empty);
         return remoteConfig;
     }

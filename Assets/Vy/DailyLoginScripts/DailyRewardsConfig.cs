@@ -1,10 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace DailyRewards
 {
@@ -31,7 +29,7 @@ namespace DailyRewards
         public List<DateData> RewardList => configData;
         public int MinLevelToReceiveRewards => minLevelToReceiveRewards;
 
-        private FirebaseManager GetFirebaseManager() => FirebaseManager.Instance;
+        private static FirebaseManager GetFirebaseManager() => FirebaseManager.Instance;
 
         [ContextMenu("Load config from remote")]
         public void LoadConfigFromRemote()

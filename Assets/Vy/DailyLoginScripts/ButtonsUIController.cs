@@ -24,12 +24,11 @@ namespace DailyRewards
             var currentLocalDateTime = DailyRewardsHelper.GetCurrentLocalDateTime().Date;
             var isTodayHaveRewards = currentLocalDateTime.Date == dataModel.RewardDateTime.Date;
             
-            closeButton.SetActive(!isTodayHaveRewards || dataModel.HasClaimedFreeRewards);
-            claimButton.SetActive(isTodayHaveRewards && !dataModel.HasClaimedFreeRewards);
+            closeButton.SetActive(!isTodayHaveRewards || dataModel.HasClaimed);
+            claimButton.SetActive(isTodayHaveRewards && !dataModel.HasClaimed);
             //claimX2Button.SetActive(isTodayHaveRewards && !dataModel.HasClaimedFreeRewards &&
                                     //!dataModel.HasClaimedAdRewards);
-            claimOneMoreButton.SetActive(isTodayHaveRewards && dataModel.HasClaimedFreeRewards &&
-                                         !dataModel.HasClaimedAdRewards);
+            claimOneMoreButton.SetActive(isTodayHaveRewards && dataModel.HasClaimed /*&& !dataModel.HasClaimedAdRewards*/);
             oneMoreDayText.text = string.Format(oneMoreDayTextFormat, dataModel.CurrentDay);
         }
         

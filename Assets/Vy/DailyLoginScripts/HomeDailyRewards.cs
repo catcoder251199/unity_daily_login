@@ -2,6 +2,7 @@ using System;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
+using DailyRewards;
 
 public class HomeController : MonoBehaviour
 {

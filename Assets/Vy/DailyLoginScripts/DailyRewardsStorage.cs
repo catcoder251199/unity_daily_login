@@ -1,27 +1,33 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class DailyRewardsStorage : AbstractDailyRewardsStorage
+namespace DailyRewards
 {
-    [SerializeField] private UserProfile userProfile;
-
-    public override void Initialize()
+    public class DailyRewardsStorage : AbstractDailyRewardsStorage
     {
-        if (userProfile == null)
-            userProfile = TryToFindUserProfile();
-        if (userProfile != null)
-            dailyRewardsUserData = userProfile.DailyRewardsUserData;
-    }
+        [SerializeField] private UserProfile userProfile;
 
-    private UserProfile TryToFindUserProfile()
-    {
-        if (GameMaster.Instance == null)
-            return null;
+        public override void Initialize()
+        {
+            if (userProfile == null)
+                userProfile = TryToFindUserProfile();
+            if (userProfile != null)
+                dailyRewardsUserData = userProfile.DailyRewardsUserData;
+        }
+
+        private UserProfile TryToFindUserProfile()
+        {
+            if (GameMaster.Instance == null)
+                return null;
             
-        return GameMaster.Instance.GetUserProfile();
-    }
+            return GameMaster.Instance.GetUserProfile();
+        }
     
-    public override int CurrentLevel => userProfile.CurrentLevel;
-    public override void MarkDirty() => userProfile.MarkDirty();
+        public override int CurrentLevel => userProfile != null ? userProfile.CurrentLevel : 0;
+
+        public override void MarkDirty()
+        {
+            if (userProfile != null)
+                userProfile.MarkDirty();
+        }
+    }
 }
