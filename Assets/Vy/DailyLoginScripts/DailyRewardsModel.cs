@@ -17,7 +17,7 @@ namespace DailyRewards
         public bool HasClaimedAnyRewards => HasClaimed /*|| HasClaimedAdRewards*/;
         public bool HasClaimedAllRewards => HasClaimed /*&& HasClaimedAdRewards*/;
         public bool DoesTodayHaveRewards => DailyRewardsHelper.GetCurrentLocalDateTime().Date == RewardDateTime.Date;
-        public bool EnoughLevelToReceiveRewards => userStorage.CurrentLevel > config.MinLevelToReceiveRewards;
+        public bool EnoughLevelToReceiveRewards => userStorage.CurrentLevel >= config.MinLevelToReceiveRewards;
 
         public void Initialize()
         {
@@ -50,32 +50,16 @@ namespace DailyRewards
 
         public void ResetClaimedRewardsFlags()
         {
-            //.DailyRewardsUserData.claimedAdRewards = false;
             userStorage.DailyRewardsUserData.claimed = false;
             userStorage.MarkDirty();
         }
 
-        public void SetClaimedFreeRewards(bool claimed)
+        public void SetClaimedRewards(bool claimed)
         {
             userStorage.DailyRewardsUserData.claimed = claimed;
             if (HasClaimedAllRewards)
             {
                 userStorage.DailyRewardsUserData.currentDay++;
-                //userStorage.DailyRewardsUserData.claimedAdRewards = false;
-                userStorage.DailyRewardsUserData.claimed = false;
-                userStorage.DailyRewardsUserData.rewardDateTime = DailyRewardsHelper.GetStartTomorrowAsLong();
-            }
-
-            userStorage.MarkDirty();
-        }
-
-        public void SetClaimAdRewards(bool claimed)
-        {
-            //userStorage.DailyRewardsUserData.claimedAdRewards = claimed;
-            if (HasClaimedAllRewards)
-            {
-                userStorage.DailyRewardsUserData.currentDay++;
-                //userStorage.DailyRewardsUserData.claimedAdRewards = false;
                 userStorage.DailyRewardsUserData.claimed = false;
                 userStorage.DailyRewardsUserData.rewardDateTime = DailyRewardsHelper.GetStartTomorrowAsLong();
             }

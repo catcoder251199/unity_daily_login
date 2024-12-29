@@ -30,6 +30,7 @@ namespace DailyRewards
         public abstract AbstractItemState GetReceivableState();
         public abstract void Initialize(DateData data, AbstractItemState initialState);
         public abstract void ClaimRewards(List<RewardItemData> rewardList, bool stillClaimable, bool watchAd);
+        public abstract UniTask ClaimRewardsAsync(List<RewardItemData> rewardList, bool stillClaimable, bool watchAd);
         public abstract Vector3 GetCoinbarPosition();
     }
 }

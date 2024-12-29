@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -11,7 +12,9 @@ namespace DailyRewards
         protected GameObject receivedFrontPanel;
 
         [SerializeField] protected GameObject receivedBackPanel;
+
         [SerializeField] protected GameObject receivablePanel;
+
         //[SerializeField] protected GameObject unavailablePanel;
         [SerializeField] protected RewardItem rewardItem;
         [SerializeField] private TextMeshProUGUI dayText;
@@ -19,8 +22,8 @@ namespace DailyRewards
         [SerializeField, Header("Animation")] private Animator animator;
         [SerializeField] protected string animationClaimed;
 
-        // [SerializeField] private Transform spawningRewardsTransform;
-        // [SerializeField] private Transform coinBarTransform;
+        [SerializeField] private Transform spawningRewardsTransform;
+        [SerializeField] private Transform coinBarTransform;
 
         public override void Initialize(DateData data, AbstractItemState initialState)
         {
@@ -44,11 +47,33 @@ namespace DailyRewards
                 SetState(GetReceivedState());
         }
 
+        public override async UniTask ClaimRewardsAsync(List<RewardItemData> rewardList, bool stillClaimable,
+            bool watchAd)
+        {
+            if (rewardList == null || rewardList.Count == 0)
+                return;
+
+            if (!stillClaimable)
+                SetState(GetReceivedState());
+            
+            var rewardInfo = rewardList[0];
+            await SpawnRewardAsync(rewardInfo.Reward, rewardInfo.Amount,
+                watchAd);
+        }
+
         private void SpawnReward(string rewardId, int amount, bool watchAd)
         {
-            // var spawningPosition = spawningRewardsTransform?.position ?? Vector3.zero;
-            // var destinationPosition = GetCoinbarPosition();
-            // DailyRewardsHelper.SpawnItem(rewardId, amount, spawningPosition, destinationPosition, watchAd);
+            var spawningPosition = spawningRewardsTransform?.position ?? Vector3.zero;
+            var destinationPosition = GetCoinbarPosition();
+            DailyRewardsHelper.SpawnItem(rewardId, amount, spawningPosition, destinationPosition, watchAd);
+        }
+        
+        private async UniTask SpawnRewardAsync(string rewardId, int amount, bool watchAd)
+        {
+            //var spawningPosition = spawningRewardsTransform?.position ?? Vector3.zero;
+            var spawningPosition = Vector3.zero;
+            var destinationPosition = GetCoinbarPosition();
+            await DailyRewardsHelper.SpawnItemAsync(rewardId, amount, spawningPosition, destinationPosition, watchAd);
         }
 
         public override Vector3 GetCoinbarPosition() => /*coinBarTransform?.position ?? Vector3.zero;*/ Vector3.zero;
@@ -140,7 +165,9 @@ namespace DailyRewards
             {
             }
 
-            public override void OnExit() {}
+            public override void OnExit()
+            {
+            }
 
             public override void UpdateContent()
             {

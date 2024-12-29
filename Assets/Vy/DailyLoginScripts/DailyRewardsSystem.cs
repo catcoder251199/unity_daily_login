@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace DailyRewards
@@ -11,6 +12,15 @@ namespace DailyRewards
 
         public event Action<TimeSpan> OnTimeUpdatedEvent;
         public event Action OnRewardsClaimedEvent;
+
+        public enum ClaimError
+        {
+            None,
+            RewardsUnavailable,
+            WatchAdFailed
+        }
+        public event Action<ClaimError> OnFreeRewardsClaimedEvent; // OnFreeRewardsClaimedEvent(bool success)
+        public event Action<ClaimError> OnDoubleRewardsClaimedEvent; // OnDoubleRewardsClaimedEvent(bool success)
 
         [SerializeField] private DailyRewardsModel model;
         [SerializeField] private bool initOnAwake = false;
@@ -23,7 +33,7 @@ namespace DailyRewards
         public bool HasAnyClaimableRewards => /*!model.HasClaimedAdRewards || */!model.HasClaimed;
         public bool EnoughLevelToReceiveRewards => model.EnoughLevelToReceiveRewards;
         public TimeSpan TimeLeftUntilRewardDay => model.RewardDateTime - currentLocalDateTime;
-        
+
         private void Awake()
         {
             if (initOnAwake)
@@ -83,9 +93,9 @@ namespace DailyRewards
             var rewardDateTime = model.RewardDateTime; // The date when the user is eligible to receive a reward.
             var isRewardDayPassed = currentDateTime.Date > rewardDateTime.Date;
             var claimedAnyRewards = model.HasClaimedAnyRewards;
-            
+
             if (!isRewardDayPassed) return;
-            
+
             if (claimedAnyRewards)
             {
                 model.IncreaseCurrentDayIndex();
@@ -95,23 +105,58 @@ namespace DailyRewards
             model.SetRewardDateTime(DailyRewardsHelper.GetStartOfTodayAsLong());
         }
 
-        public bool ClaimFreeRewards()
+        public void HandleFreeButtonClick()
+        {
+            Debug.Log("system handle free button click");
+            var success = TryClaimFreeRewards();
+            if (!success)
+            {
+                OnFreeRewardsClaimedEvent?.Invoke(ClaimError.RewardsUnavailable);
+                return;
+            }
+            
+            OnFreeRewardsClaimedEvent?.Invoke(ClaimError.None);
+        }
+        
+        private bool TryClaimFreeRewards()
         {
             if (!CanClaimFreeRewards())
                 return false;
-            model.SetClaimedFreeRewards(true);
-            OnRewardsClaimedEvent?.Invoke();
+            model.SetClaimedRewards(true);
             return true;
         }
 
-        public bool CanClaimOneMoreRewards()
+        public void HandleX2ButtonClick()
         {
-            return model.DoesTodayHaveRewards /*&& !model.HasClaimedAdRewards*/ && model.HasClaimed;
+            Debug.Log("system handle x2 button click");
+            if (!CanClaimX2Rewards())
+            {
+                OnDoubleRewardsClaimedEvent?.Invoke(ClaimError.RewardsUnavailable);
+                return;
+            }
+            
+            GameMaster.Instance.ShowRewardedVideo(OnDoubleRewardsWatchAdSuccess, OnDoubleRewardsWatchAdFailed, "DailyRewardsX2").Forget();
+        }
+        
+        private void OnDoubleRewardsWatchAdSuccess()
+        {
+            OnDoubleRewardsClaimedEvent?.Invoke(ClaimError.None);
+        }
+        
+        private void OnDoubleRewardsWatchAdFailed()
+        {
+            OnDoubleRewardsClaimedEvent?.Invoke(ClaimError.WatchAdFailed);
+        }
+        
+        private async UniTask WatchAdAsync(Action onSuccess, Action<string> onFailed, string adPlacement)
+        {
+            await UniTask.Delay(TimeSpan.FromSeconds(0.5));
+            onSuccess?.Invoke();
         }
 
         public bool CanClaimX2Rewards()
         {
-            return model.DoesTodayHaveRewards /*&& !model.HasClaimedAdRewards*/ && !model.HasClaimed;
+            return model.DoesTodayHaveRewards && !model.HasClaimed;
         }
 
         public bool CanClaimFreeRewards()
@@ -119,20 +164,10 @@ namespace DailyRewards
             return model.DoesTodayHaveRewards && !model.HasClaimed;
         }
 
-        public bool ClaimX2Rewards()
+        private bool TryClaimDoubleRewards()
         {
             if (!CanClaimX2Rewards()) return false;
-            model.SetClaimedFreeRewards(true);
-            model.SetClaimAdRewards(true);
-            OnRewardsClaimedEvent?.Invoke();
-            return true;
-        }
-
-        public bool ClaimOneMoreRewards()
-        {
-            if (!CanClaimOneMoreRewards()) return false;
-            model.SetClaimAdRewards(true);
-            OnRewardsClaimedEvent?.Invoke();
+            model.SetClaimedRewards(true);
             return true;
         }
 

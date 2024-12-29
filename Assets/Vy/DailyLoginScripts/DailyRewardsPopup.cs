@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using DailyRewards;
 using Doozy.Engine.UI;
 using UnityEngine;
 
@@ -16,17 +15,27 @@ namespace DailyRewards
         [SerializeField] AbstractButtonsUIController buttonsUIController;
         [SerializeField] AbstractTimerUIController timerUIController;
 
-        private DailyRewardsSystem dailyRewardsSystem;
         public DailyRewardsSystem DailyRewardsSystem => dailyRewardsSystem;
-        
+        private AbstractButtonsUIController ButtonsUIController => buttonsUIController;
+        private LockUI LockUI { get; set; }
+
+        private DailyRewardsSystem dailyRewardsSystem;
         private DailyRewardsModel dataModel;
-        private LockUI lockUI;
 
         private void Start()
         {
             if (initOnAwake)
             {
                 Initialize(DailyRewardsSystem.Instance);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (dailyRewardsSystem != null)
+            {
+                dailyRewardsSystem.OnFreeRewardsClaimedEvent -= OnFreeRewardsClaimedEventHandler;
+                dailyRewardsSystem.OnDoubleRewardsClaimedEvent -= OnDoubleRewardsClaimedEventHandler;
             }
         }
 
@@ -40,7 +49,7 @@ namespace DailyRewards
 
             this.dailyRewardsSystem = dailyRewardsSystem;
             dataModel = this.dailyRewardsSystem.Model;
-            lockUI = new LockUI();
+            LockUI = new LockUI();
 
             InitializeContent();
             InitializeTimerUIController();
@@ -78,7 +87,7 @@ namespace DailyRewards
 
         public void OnButtonClosedClicked()
         {
-            if (lockUI.IsLocked())
+            if (LockUI.IsLocked())
                 return;
 
             // StaticLock.TryExecute(() =>
@@ -89,107 +98,90 @@ namespace DailyRewards
 
         public void OnFreeButtonClicked()
         {
-            if (lockUI.IsLocked())
+            Debug.Log("Free button clicked");
+            if (LockUI.IsLocked())
                 return;
 
-            // StaticLock.TryExecute(async () =>
+            LockUI.Lock();
+
+            // StaticLock.TryExecute(() =>
             // {
-            //     lockUI.Lock();
-            //
-            //     if (!dailyRewardsSystem.CanClaimFreeRewards())
-            //     {
-            //         buttonsUIController.SetAllClaimButtonsActive(false);
-            //         buttonsUIController.SetCloseButton(true);
-            //         lockUI.UnLock();
-            //         return;
-            //     }
-            //
-            //     var rewardsToday = dailyRewardsSystem.GetRewardsToday();
-            //     var success = dailyRewardsSystem.ClaimFreeRewards();
-            //     if (success)
-            //     {
-            //         buttonsUIController?.UpdateButtons();
-            //         
-            //         ShowReceivedRewards(rewardsToday, false);
-            //         await UniTask.Delay(TimeSpan.FromSeconds(0.5));
-            //         lockUI.ForceUnlock();
-            //     }
+            dailyRewardsSystem.OnFreeRewardsClaimedEvent -= OnFreeRewardsClaimedEventHandler;
+            dailyRewardsSystem.OnFreeRewardsClaimedEvent += OnFreeRewardsClaimedEventHandler;
+            dailyRewardsSystem.HandleFreeButtonClick();
             // });
         }
 
-        private void ShowReceivedRewards(List<RewardItemData> rewardList, bool watchAd)
+        private async void OnFreeRewardsClaimedEventHandler(DailyRewardsSystem.ClaimError error)
+        {
+            if (error == DailyRewardsSystem.ClaimError.RewardsUnavailable)
+            {
+                ButtonsUIController.SetAllClaimButtonsActive(false);
+                ButtonsUIController.SetCloseButton(true);
+                LockUI.UnLock();
+                return;
+            }
+
+            var rewardsToday = dailyRewardsSystem.GetRewardsToday();
+            ButtonsUIController.UpdateButtons();
+            await ShowReceivedRewardsAsync(rewardsToday, false);
+            LockUI.UnLock();
+        }
+
+        public async UniTask ShowReceivedRewardsAsync(List<RewardItemData> rewardList, bool watchAd)
         {
             if (rewardList == null || rewardList.Count == 0)
                 return;
 
-            if (content.ReceivableAbstractRewardSlot != null)
-            {
-                var doesTodayHaveRewards = dataModel.DoesTodayHaveRewards;
-                var stillClaimable = doesTodayHaveRewards &&
-                                     (/*!dataModel.HasClaimedAdRewards || */!dataModel.HasClaimed);
-                content.ReceivableAbstractRewardSlot.ClaimRewards(rewardList, stillClaimable, watchAd);
-            }
+            if (content.ReceivableAbstractRewardSlot == null) return;
+
+            var doesTodayHaveRewards = dataModel.DoesTodayHaveRewards;
+            var stillClaimable = doesTodayHaveRewards && !dataModel.HasClaimed;
+            await content.ReceivableAbstractRewardSlot.ClaimRewardsAsync(rewardList, stillClaimable, watchAd);
         }
 
         public void OnX2ButtonClicked()
         {
-            if (lockUI.IsLocked())
+            if (LockUI.IsLocked())
                 return;
+
+            LockUI.Lock();
 
             // StaticLock.TryExecute(() =>
             // {
-            //     lockUI .Lock();
-            //
-            //     if (!dailyRewardsSystem.CanClaimX2Rewards())
-            //     {
-            //         buttonsUIController.SetAllClaimButtonsActive(false);
-            //         buttonsUIController.SetCloseButton(true);
-            //         lockUI.UnLock();
-            //         return;
-            //     }
-            //
-            //     GameMaster.Instance.ShowRewardedVideo(OnDoubleClaimSuccess, OnWatchAdFailed, "DailyRewardsX2");
+            dailyRewardsSystem.OnDoubleRewardsClaimedEvent -= OnDoubleRewardsClaimedEventHandler;
+            dailyRewardsSystem.OnDoubleRewardsClaimedEvent += OnDoubleRewardsClaimedEventHandler;
+            dailyRewardsSystem.HandleX2ButtonClick();
             // });
         }
-
-        public void OnOneMoreButtonClicked()
+        
+        private async void OnDoubleRewardsClaimedEventHandler(DailyRewardsSystem.ClaimError error)
         {
-            if (lockUI.IsLocked())
-                return;
-
-            // StaticLock.TryExecute(() =>
-            // {
-            //     lockUI.Lock();
-            //
-            //     if (!dailyRewardsSystem.CanClaimOneMoreRewards())
-            //     {
-            //         buttonsUIController.SetAllClaimButtonsActive(false);
-            //         buttonsUIController.SetCloseButton(true);
-            //         lockUI.UnLock();
-            //         return;
-            //     }
-            //
-            //     GameMaster.Instance.ShowRewardedVideo(OnOneMoreClaimSuccess, OnWatchAdFailed, "DailyRewardsOneMore");
-            // });
-        }
-
-        private async void OnDoubleClaimSuccess()
-        {
-            var rewardsToday = dailyRewardsSystem.GetDoubledRewardsToday();
-            var success = dailyRewardsSystem.ClaimX2Rewards();
-            if (success)
+            switch (error)
             {
-                buttonsUIController.UpdateButtons();
-                ShowReceivedRewards(rewardsToday, true);
-                await UniTask.Delay(TimeSpan.FromSeconds(0.5));
-                lockUI.ForceUnlock();
+                case DailyRewardsSystem.ClaimError.RewardsUnavailable:
+                {
+                    ButtonsUIController.SetAllClaimButtonsActive(false);
+                    ButtonsUIController.SetCloseButton(true);
+                    LockUI.UnLock();
+                    return;
+                }
+                case DailyRewardsSystem.ClaimError.WatchAdFailed:
+                {
+                    OnWatchAdFailed();
+                    return;
+                }
             }
+            
+            var rewardsToday = dailyRewardsSystem.GetDoubledRewardsToday();
+            ButtonsUIController.UpdateButtons();
+            await ShowReceivedRewardsAsync(rewardsToday, false);
+            LockUI.UnLock();
         }
 
-        private void OnWatchAdFailed(string error)
+        private void OnWatchAdFailed()
         {
-            PrintLogError($"OnWatchAdFailed: {error}");
-            lockUI.UnLock();
+            LockUI.UnLock();
 
             //Debug.LogError($"[{nameof(DailyRewardsPopup)}] OnWatchAdFailed: {error}");
             // var uiPopup = UIPopupManager.ShowPopup(UINameConstants.WatchAdFailedPopup, false, false);
@@ -207,20 +199,6 @@ namespace DailyRewards
             // {
             //     lockUI = false;
             // }
-        }
-
-        private async void OnOneMoreClaimSuccess()
-        {
-            var rewardsToday = dailyRewardsSystem.GetRewardsToday();
-            var success = dailyRewardsSystem.ClaimOneMoreRewards();
-            if (success)
-            {
-                buttonsUIController.UpdateButtons();
-                ShowReceivedRewards(rewardsToday, true);
-                await UniTask.Delay(TimeSpan.FromSeconds(0.5));
-            }
-
-            lockUI.UnLock();
         }
 
         private static void PrintLog(string message)

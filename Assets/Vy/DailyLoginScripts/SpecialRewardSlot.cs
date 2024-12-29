@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
@@ -51,6 +52,33 @@ namespace DailyRewards
 
             if (!stillClaimable)
                 SetState(GetReceivedState());
+        }
+        
+        public override async UniTask ClaimRewardsAsync(List<RewardItemData> rewardList, bool stillClaimable, bool watchAd)
+        {
+            if (rewardList == null || rewardList.Count == 0)
+                return;
+            
+            if (!stillClaimable)
+                SetState(GetReceivedState());
+            
+            var tasks = new List<UniTask>();
+            for (int i = 0, j = -1; i < rewardList.Count; i++)
+            {
+                if (j + 1 < rewardItems.Count)
+                    j++;
+
+                var spawnPosition = rewardParent?.position ?? Vector3.zero;
+                if (0 <= j && j < rewardItems.Count)
+                    spawnPosition = rewardItems[j].transform.position;
+
+                var rewardInfo = rewardList[i];
+                var spawnTask = DailyRewardsHelper.SpawnItemAsync(rewardInfo.Reward, rewardInfo.Amount, spawnPosition,
+                    coinBarTransform.position, watchAd);
+                tasks.Add(spawnTask);
+            }
+            
+            await UniTask.WhenAll(tasks);
         }
 
         public override Vector3 GetCoinbarPosition() => coinBarTransform ? coinBarTransform.position : Vector3.zero;
@@ -163,7 +191,7 @@ namespace DailyRewards
             {
                 base.UpdateContent();
 
-                Context.receivedFrontPanel.SetActive(true);
+                Context.receivedBackPanel.SetActive(true);
             }
         }
     }

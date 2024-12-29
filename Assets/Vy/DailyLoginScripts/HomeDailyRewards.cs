@@ -61,5 +61,12 @@ public class HomeController : MonoBehaviour
     private void OnHomeEnterEnd()
     {
         EnableAllHomeButtons();
+        Debug.Log("Vy: Home Controller end");
+    }
+
+    [ContextMenu("Enter Home")]
+    public void TryEnterHome()
+    {
+        Start();
     }
 }

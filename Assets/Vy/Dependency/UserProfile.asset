@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: UserProfile
   m_EditorClassIdentifier: 
   profile:
-    currentLevel: 0
+    currentLevel: 3
     currentLoopLevel: 0
-    ingameCurrency: 0
+    ingameCurrency: 30
     cachedInGameCurrency: 0
     isOldUser: 0
     savedQualityLevel: -1
@@ -26,10 +26,11 @@ MonoBehaviour:
     endlessLevel: 
     freeCoinTurnClaim: 0
     isBgEvent: 0
-    boosterDatas: []
-    cachedbooster: []
+    boosterDatas:
+    - amount: 1
+    cachedbooster:
+    - amount: 1
     dailyRewardsData:
-      currentDay: 0
-      claimedFreeRewards: 0
-      claimedAdRewards: 0
+      currentDay: 3
+      claimed: 0
       rewardDateTime: 0
